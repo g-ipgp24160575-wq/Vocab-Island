@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vocab Island - 3D English Learning Game</title>
+    <style>
+        :root {
+            --sky-blue: #A2D2FF;
+            --pastel-green: #B7E4C7;
+            --butter-yellow: #FEF08A;
+            --blush-pink: #FFC8DD;
+            --soft-purple: #C8B6FF;
+            --dark-text: #2D3748;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--sky-blue);
+            color: var(--dark-text);
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #canvas-3d {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* Top Header Bar */
+        .header-bar {
+            position: absolute;
+            top: 15px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .brand-badge {
+            background: rgba(255, 255, 255, 0.92);
+            padding: 10px 20px;
+            border-radius: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            pointer-events: auto;
+        }
+
+        .brand-badge h1 {
+            font-size: 18px;
+            color: #4A5568;
+        }
+
+        .pupil-pill {
+            background: var(--butter-yellow);
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-weight: bold;
+            font-size: 13px;
+        }
+
+        .stats-badge {
+            background: rgba(255, 255, 255, 0.92);
+            padding: 10px 20px;
+            border-radius: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            pointer-events: auto;
+        }
+
+        .star-count {
+            color: #D97706;
+            font-weight: bold;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn-icon {
+            background: #EDF2F7;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            color: #4A5568;
+            transition: all 0.2s;
+        }
+
+        .btn-icon:hover {
+            background: #E2E8F0;
+            transform: translateY(-1px);
+        }
+
+        /* Mission Panel */
+        .mission-panel {
+            position: absolute;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 680px;
+            background: rgba(255, 255, 255, 0.96);
+            border-radius: 24px;
+            padding: 20px 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            border: 3px solid var(--soft-purple);
+        }
+
+        .mission-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .mission-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #6B21A8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .mode-tag {
+            background: var(--blush-pink);
+            color: #9D174D;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .target-prompt {
+            font-size: 16px;
+            color: #1E293B;
+            font-weight: 600;
+            text-align: center;
+            background: #F8FAFC;
+            padding: 10px;
+            border-radius: 12px;
+            border: 1px dashed #CBD5E1;
+        }
+
+        .sentence-dropzone {
+            min-height: 52px;
+            background: #F1F5F9;
+            border-radius: 16px;
+            padding: 8px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed #94A3B8;
+        }
+
+        .word-tile {
+            background: #FFFFFF;
+            border: 2px solid #CBD5E1;
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: all 0.15s ease;
+        }
+
+        .word-tile:hover {
+            border-color: #8B5CF6;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(139, 92, 246, 0.2);
+        }
+
+        .word-bank {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            padding: 5px 0;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .btn-action {
+            padding: 10px 24px;
+            border-radius: 16px;
+            border: none;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-check {
+            background: #10B981;
+            color: white;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-check:hover {
+            background: #059669;
+            transform: translateY(-1px);
+        }
+
+        .btn-clear {
+            background: #E2E8F0;
+            color: #475569;
+        }
+
+        .btn-clear:hover {
+            background: #CBD5E1;
+        }
+
+        /* Feedback Toast */
+        .feedback-banner {
+            text-align: center;
+            font-size: 14px;
+            font-weight: 600;
+            padding: 6px 12px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .feedback-banner.success {
+            background: #D1FAE5;
+            color: #065F46;
+            display: block;
+        }
+
+        .feedback-banner.error {
+            background: #FEE2E2;
+            color: #991B1B;
+            display: block;
+        }
+
+        /* Logging Status Badge */
+        .logging-status {
+            position: absolute;
+            top: 75px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #94A3B8;
+        }
+
+        .status-dot.active { background: #10B981; }
+        .status-dot.sending { background: #F59E0B; }
+        .status-dot.error { background: #EF4444; }
+
+        /* Modal Settings */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s;
+        }
+
+        .modal-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-card {
+            background: white;
+            width: 90%;
+            max-width: 500px;
+            border-radius: 24px;
+            padding: 25px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .modal-card h2 {
+            font-size: 18px;
+            color: #1E293B;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+        }
+
+        .form-group input {
+            padding: 10px 14px;
+            border-radius: 12px;
+            border: 1px solid #CBD5E1;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .form-group input:focus {
+            border-color: #8B5CF6;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 10px;
+        }
+    </style>
+    <!-- Three.js Library for 3D Graphics -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+<div id="game-container">
+    <canvas id="canvas-3d"></canvas>
+
+    <!-- Header Bar -->
+    <div class="header-bar">
+        <div class="brand-badge">
+            <h1>Vocab Island 🏝️</h1>
+            <span class="pupil-pill" id="display-pupil-name">Pupil: Ahmad</span>
+        </div>
+
+        <div class="stats-badge">
+            <div class="star-count">⭐ <span id="star-score">0</span></div>
+            <button class="btn-icon" onclick="openSettingsModal()">⚙️ Settings & Sheets</button>
+        </div>
+    </div>
+
+    <!-- Live Google Sheets Status Banner -->
+    <div class="logging-status">
+        <span class="status-dot" id="status-dot"></span>
+        <span id="status-text">Google Sheets: Unlinked</span>
+    </div>
+
+    <!-- Mission Panel -->
+    <div class="mission-panel">
+        <div class="mission-header">
+            <span class="mission-title" id="zone-title">Cosy Home • Prepositions Mission</span>
+            <span class="mode-tag" id="mode-tag">Core Mode</span>
+        </div>
+
+        <div class="target-prompt" id="mission-prompt">
+            Look at the room: Where is the lamp?
+        </div>
+
+        <!-- Sentence Dropzone -->
+        <div class="sentence-dropzone" id="sentence-dropzone"></div>
+
+        <!-- Word Bank Tiles -->
+        <div class="word-bank" id="word-bank"></div>
+
+        <!-- Feedback Banner -->
+        <div class="feedback-banner" id="feedback-banner"></div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button class="btn-action btn-clear" onclick="clearSentence()">Clear</button>
+            <button class="btn-action btn-check" onclick="checkSentence()">Check Sentence</button>
+        </div>
+    </div>
+</div>
+
+<!-- Settings & Apps Script URL Modal -->
+<div class="modal-overlay" id="settings-modal">
+    <div class="modal-card">
+        <h2>⚙️ Google Sheets & Pupil Settings</h2>
+        <p style="font-size: 13px; color: #64748B;">
+            Paste your Google Apps Script Web App URL to record pupil responses automatically in your Google Sheet.
+        </p>
+
+        <div class="form-group">
+            <label for="pupil-name-input">Pupil Name:</label>
+            <input type="text" id="pupil-name-input" placeholder="e.g. Ahmad / Siti">
+        </div>
+
+        <div class="form-group">
+            <label for="script-url-input">Google Apps Script Web App URL:</label>
+            <input type="text" id="script-url-input" placeholder="https://script.google.com/macros/s/.../exec">
+        </div>
+
+        <div class="modal-actions">
+            <button class="btn-action btn-clear" onclick="closeSettingsModal()">Cancel</button>
+            <button class="btn-action btn-check" onclick="saveSettings()">Save & Connect</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- GAME STATE & DSKP CURRICULUM MISSIONS ---
+    let pupilName = localStorage.getItem('vocab_pupil_name') || 'Ahmad';
+    let appsScriptUrl = localStorage.getItem('vocab_script_url') || '';
+    let starsEarned = 0;
+    let currentMissionIndex = 0;
+    let selectedWords = [];
+
+    // Curriculum missions aligned to Malaysian KSSR Year 3 (CEFR A1 Mid)
+    const MISSIONS = [
+        {
+            zone: "Cosy Home",
+            objective: "Prepositions of Place (next to)",
+            prompt: "Describe where the lamp is located:",
+            target: "The lamp is next to the sofa.",
+            words: ["The", "lamp", "is", "next to", "the", "sofa.", "under", "on"],
+            supportLevel: "Core Mode"
+        },
+        {
+            zone: "Cosy Home",
+            objective: "Prepositions of Place (under)",
+            prompt: "Describe where the rug is located:",
+            target: "The rug is under the table.",
+            words: ["The", "rug", "is", "under", "the", "table.", "next to", "in"],
+            supportLevel: "Core Mode"
+        },
+        {
+            zone: "Animal Meadow",
+            objective: "Describing Animals (Adjectives)",
+            prompt: "Describe the zebra:",
+            target: "The zebra is fast.",
+            words: ["The", "zebra", "is", "fast.", "big", "slow"],
+            supportLevel: "Supported Mode"
+        }
+    ];
+
+    // --- INITIALIZATION ---
+    document.addEventListener('DOMContentLoaded', () => {
+        updatePupilUI();
+        updateLoggingStatus();
+        loadMission(0);
+        init3DScene();
+    });
+
+    function updatePupilUI() {
+        document.getElementById('display-pupil-name').innerText = `Pupil: ${pupilName}`;
+        document.getElementById('pupil-name-input').value = pupilName;
+        document.getElementById('script-url-input').value = appsScriptUrl;
+    }
+
+    function updateLoggingStatus() {
+        const dot = document.getElementById('status-dot');
+        const text = document.getElementById('status-text');
+
+        if (appsScriptUrl && appsScriptUrl.trim() !== '') {
+            dot.className = 'status-dot active';
+            text.innerText = 'Google Sheets: Ready';
+        } else {
+            dot.className = 'status-dot';
+            text.innerText = 'Google Sheets: Unlinked (Click ⚙️)';
+        }
+    }
+
+    // --- MISSION & WORD BANK MANAGEMENT ---
+    function loadMission(index) {
+        currentMissionIndex = index % MISSIONS.length;
+        const mission = MISSIONS[currentMissionIndex];
+
+        document.getElementById('zone-title').innerText = `${mission.zone} • Mission ${currentMissionIndex + 1}`;
+        document.getElementById('mode-tag').innerText = mission.supportLevel;
+        document.getElementById('mission-prompt').innerText = mission.prompt;
+        
+        clearSentence();
+        renderWordBank(mission.words);
+        hideFeedback();
+    }
+
+    function renderWordBank(words) {
+        const bankEl = document.getElementById('word-bank');
+        bankEl.innerHTML = '';
+
+        const shuffled = [...words].sort(() => 0.5 - Math.random());
+
+        shuffled.forEach((word) => {
+            const btn = document.createElement('button');
+            btn.className = 'word-tile';
+            btn.innerText = word;
+            btn.onclick = () => selectWord(word, btn);
+            bankEl.appendChild(btn);
+        });
+    }
+
+    function selectWord(word, element) {
+        selectedWords.push(word);
+        element.style.visibility = 'hidden';
+
+        const dropzone = document.getElementById('sentence-dropzone');
+        const tile = document.createElement('span');
+        tile.className = 'word-tile';
+        tile.innerText = word;
+        tile.onclick = () => deselectWord(word, element, tile);
+        dropzone.appendChild(tile);
+    }
+
+    function deselectWord(word, originalBtn, dropzoneTile) {
+        const index = selectedWords.indexOf(word);
+        if (index > -1) {
+            selectedWords.splice(index, 1);
+        }
+        dropzoneTile.remove();
+        originalBtn.style.visibility = 'visible';
+    }
+
+    function clearSentence() {
+        selectedWords = [];
+        document.getElementById('sentence-dropzone').innerHTML = '';
+        const mission = MISSIONS[currentMissionIndex];
+        renderWordBank(mission.words);
+        hideFeedback();
+    }
+
+    function hideFeedback() {
+        const banner = document.getElementById('feedback-banner');
+        banner.className = 'feedback-banner';
+        banner.style.display = 'none';
+    }
+
+    // --- SENTENCE VALIDATION & APPS SCRIPT LOGGING ---
+    async function checkSentence() {
+        const mission = MISSIONS[currentMissionIndex];
+        const userSentence = selectedWords.join(' ');
+        const isCorrect = userSentence.trim() === mission.target.trim();
+        const banner = document.getElementById('feedback-banner');
+
+        if (isCorrect) {
+            starsEarned += 3;
+            document.getElementById('star-score').innerText = starsEarned;
+            banner.className = 'feedback-banner success';
+            banner.innerText = '🌟 Excellent work! You put the words in the correct order.';
+        } else {
+            banner.className = 'feedback-banner error';
+            banner.innerText = '💡 Almost! Check your word order and prepositions carefully.';
+        }
+
+        // Send results to Google Sheets Apps Script endpoint
+        await recordGameResult({
+            pupilName: pupilName,
+            zone: mission.zone,
+            learningObjective: mission.objective,
+            targetSentence: mission.target,
+            userSentence: userSentence,
+            supportLevel: mission.supportLevel,
+            starsEarned: isCorrect ? 3 : 0,
+            isCorrect: isCorrect
+        });
+
+        // Load next mission on success
+        if (isCorrect) {
+            setTimeout(() => {
+                loadMission(currentMissionIndex + 1);
+            }, 2500);
+        }
+    }
+
+    async function recordGameResult(data) {
+        const dot = document.getElementById('status-dot');
+        const text = document.getElementById('status-text');
+
+        if (!appsScriptUrl || appsScriptUrl.trim() === '') {
+            console.warn('Vocab Island: Google Apps Script Web App URL is not set.');
+            return;
+        }
+
+        dot.className = 'status-dot sending';
+        text.innerText = 'Logging to Sheet...';
+
+        const payload = {
+            timestamp: new Date().toLocaleString("en-GB", { timeZone: "Asia/Kuala_Lumpur" }),
+            pupilName: data.pupilName,
+            zone: data.zone,
+            learningObjective: data.learningObjective,
+            targetSentence: data.targetSentence,
+            userSentence: data.userSentence,
+            supportLevel: data.supportLevel,
+            starsEarned: data.starsEarned,
+            status: data.isCorrect ? "Success" : "Needs Review"
+        };
+
+        try {
+            await fetch(appsScriptUrl, {
+                method: "POST",
+                mode: "no-cors",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(payload)
+            });
+
+            dot.className = 'status-dot active';
+            text.innerText = 'Logged to Sheet ✓';
+            setTimeout(updateLoggingStatus, 3000);
+
+        } catch (err) {
+            console.error('Failed to log game result:', err);
+            dot.className = 'status-dot error';
+            text.innerText = 'Log Error';
+        }
+    }
+
+    // --- MODAL HANDLERS ---
+    function openSettingsModal() {
+        document.getElementById('settings-modal').classList.add('open');
+    }
+
+    function closeSettingsModal() {
+        document.getElementById('settings-modal').classList.remove('open');
+    }
+
+    function saveSettings() {
+        const nameVal = document.getElementById('pupil-name-input').value.trim();
+        const urlVal = document.getElementById('script-url-input').value.trim();
+
+        if (nameVal) pupilName = nameVal;
+        appsScriptUrl = urlVal;
+
+        localStorage.setItem('vocab_pupil_name', pupilName);
+        localStorage.setItem('vocab_script_url', appsScriptUrl);
+
+        updatePupilUI();
+        updateLoggingStatus();
+        closeSettingsModal();
+    }
+
+    // --- THREE.JS LOW-POLY 3D ENVIRONMENT ---
+    function init3DScene() {
+        const canvas = document.getElementById('canvas-3d');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xA2D2FF);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 12, 16);
+        camera.lookAt(0, 1, 0);
+
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
+        // Ambient and Directional Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xfffaed, 0.8);
+        dirLight.position.set(10, 20, 10);
+        scene.add(dirLight);
+
+        // Room Floor
+        const floorGeo = new THREE.PlaneGeometry(16, 12);
+        const floorMat = new THREE.MeshLambertMaterial({ color: 0xFDE68A });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        scene.add(floor);
+
+        // Back Wall
+        const wallMat = new THREE.MeshLambertMaterial({ color: 0xE2E8F0 });
+        const backWall = new THREE.Mesh(new THREE.PlaneGeometry(16, 8), wallMat);
+        backWall.position.set(0, 4, -6);
+        scene.add(backWall);
+
+        // Low-poly Sofa
+        const sofaGroup = new THREE.Group();
+        const sofaMat = new THREE.MeshLambertMaterial({ color: 0xC8B6FF });
+        const sofaBase = new THREE.Mesh(new THREE.BoxGeometry(4, 1, 1.8), sofaMat);
+        const sofaBack = new THREE.Mesh(new THREE.BoxGeometry(4, 1.8, 0.6), sofaMat);
+        sofaBack.position.set(0, 0.9, -0.6);
+        sofaGroup.add(sofaBase, sofaBack);
+        sofaGroup.position.set(-1.5, 0.5, -2);
+        scene.add(sofaGroup);
+
+        // Low-poly Lamp
+        const lampGroup = new THREE.Group();
+        const poleMat = new THREE.MeshLambertMaterial({ color: 0x64748B });
+        const shadeMat = new THREE.MeshLambertMaterial({ color: 0xFEF08A });
+        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 3.5), poleMat);
+        const shade = new THREE.Mesh(new THREE.ConeGeometry(0.8, 1, 8), shadeMat);
+        shade.position.y = 1.6;
+        lampGroup.add(pole, shade);
+        lampGroup.position.set(2, 1.75, -2);
+        scene.add(lampGroup);
+
+        // Render Loop
+        function animate() {
+            requestAnimationFrame(animate);
+            lampGroup.rotation.y += 0.005;
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    }
+</script>
+</body>
+</html>
